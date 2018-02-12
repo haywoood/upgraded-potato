@@ -1,16 +1,8 @@
 (ns bakery.views
   (:require [re-frame.core :as re-frame]
-            [goog.string :as gs]
-            [goog.string.format]
             [bakery.subs :as subs]
-            [bakery.events :as events]))
-
-(defn format-number [n] (str "$" (gs/format "%.2f" n)))
-
-(defn price-text [price bulkPricing]
-  (str (format-number price) (and bulkPricing
-                               (str " or " (:amount bulkPricing)
-                                    " for " (format-number (:totalPrice bulkPricing))))))
+            [bakery.events :as events]
+            [bakery.helpers :refer [format-number price-text]]))
 
 (defn treat-item [{:keys [id name imageURL id price bulkPricing]}]
   [:div {:key id :class "Treat-item"}
@@ -33,19 +25,21 @@
     [:div {:class "CartItem-total"} (format-number total)]])
 
 (defn cart []
-  (let [items (re-frame/subscribe [::subs/cart-list-view])
+  (let [items @(re-frame/subscribe [::subs/cart-list-view])
         total (re-frame/subscribe [::subs/total])]
-    (if (not-empty @items)
+    (if (not-empty items)
       [:div
         [:div {:class "Cart-list"}
-         (map cart-item @items)
+         (map cart-item items)
          (cart-item {:text "Total" :total @total :id "total"})]
         [:button {:class "Clear Button" :on-click #(re-frame/dispatch [::events/initialize-db])} "Clear Cart"]]
       [:div ""])))
 
 (defn main-panel []
   [:div {:class "App"}
-   (treat-list)
-   [:div {:class "Cart"}
+   [:div {:class "u-flexColumn u-flex1"}
     [:div {:class "Logo"} "Kontor Bakery"]
+    (treat-list)]
+   [:div {:class "Cart"}
+    [:div {:class "Cart-text Logo"} "Cart"]
     (cart)]])
